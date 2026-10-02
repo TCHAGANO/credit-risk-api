@@ -1,0 +1,16 @@
+# Environnement Python
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Variables secrètes
+.env
+
+# Fichiers système
+.DS_Store
+Thumbs.db

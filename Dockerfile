@@ -1,23 +1,25 @@
-# Image Python
+
+# Image de base : Python
 FROM python:3.13-slim
 
-# Dossier de travail dans le conteneur
+# Dossier de travail dans le conteneur Docker
 WORKDIR /app
 
-# Copier les dépendances
+# Copier le fichier des dépendances
 COPY requirements.txt .
 
-# Installer les dépendances
+# Installer les bibliothèques Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copier l'application FastAPI
+# Copier le code de l'API
 COPY app ./app
 
-# Copier le modèle entraîné
+# Copier le modèle de Machine Learning
 COPY models ./models
 
-# Port utilisé par FastAPI
-EXPOSE 8000
+# Indiquer le port utilisé par Render
+EXPOSE 10000
 
-# Lancer l'application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Démarrer FastAPI sur le port fourni par Render
+# Si PORT n'existe pas, utiliser 10000 par défaut
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000}"]

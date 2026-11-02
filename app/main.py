@@ -1,105 +1,77 @@
-
-# API DE PRÉDICTION DU RISQUE DE DÉFAUT
-
-
 from pathlib import Path
 
 import joblib
 import pandas as pd
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
-from fastapi import FastAPI
-from pydantic import BaseModel
-
-
-
-# 1. LOCALISATION DU MODÈLE
-
-
-# __file__ = emplacement de app/main.py
-# parent = dossier app/
-# parent.parent = dossier FastAPI/
-DOSSIER_PROJET = Path(__file__).resolve().parent.parent
-
-CHEMIN_MODELE = DOSSIER_PROJET / "models" / "meilleur_modele.pkl"
-
-
-
-# 2. CHARGEMENT DU MODÈLE
-
-
-modele = joblib.load(CHEMIN_MODELE)
-
-
-
-# 3. CRÉATION DE L'APPLICATION FASTAPI
-
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+MODEL_PATH = PROJECT_DIR / "models" / "meilleur_modele.pkl"
 
 app = FastAPI(
-    title="API de prédiction du défaut de crédit",
-    description="API permettant d'estimer le risque de défaut d'un emprunteur.",
-    version="1.0.0"
+    title="Credit Risk Prediction API",
+    description="API de prédiction du risque de défaut de crédit.",
+    version="3.0.0",
 )
 
+model = None
 
-# 4. STRUCTURE DES DONNÉES D'ENTRÉE
 
-class Emprunteur(BaseModel):
+@app.on_event("startup")
+def load_model():
+    global model
+    if not MODEL_PATH.exists():
+        raise RuntimeError(f"Modèle introuvable : {MODEL_PATH}")
+    model = joblib.load(MODEL_PATH)
 
-    age: int
 
-    revenu_annuel: float
-
+class Borrower(BaseModel):
+    age: int = Field(ge=18, le=100)
+    revenu_annuel: float = Field(ge=0)
     statut_logement: str
-
-    anciennete_emploi: float
-
+    anciennete_emploi: float = Field(ge=0)
     motif_pret: str
-
     niveau_de_risque: str
-
-    montant_pret: float
-
-    taux_interet: float
-
-    ratio_pret_revenu: float
-
+    montant_pret: float = Field(ge=0)
+    taux_interet: float = Field(ge=0)
+    ratio_pret_revenu: float = Field(ge=0)
     defaut_historique_credit: str
+    duree_historique_credit: int = Field(ge=0)
 
-    duree_historique_credit: float
-
-
-# 5. ROUTE D'ACCUEIL
 
 @app.get("/")
-def accueil():
+def root():
+    return {"message": "Credit Risk API is running", "version": app.version}
 
+
+@app.get("/health")
+def health():
     return {
-        "message": "API de prédiction du défaut de crédit opérationnelle"
+        "status": "ok" if model is not None else "model_not_loaded",
+        "model_loaded": model is not None,
     }
 
-# 6. ROUTE DE PRÉDICTION
+
 @app.post("/predict")
-def predire(emprunteur: Emprunteur):
+def predict(borrower: Borrower):
+    if model is None:
+        raise HTTPException(status_code=503, detail="Le modèle n'est pas chargé.")
 
-    # Transformer les données reçues en dictionnaire
-    donnees = emprunteur.model_dump()
+    data = pd.DataFrame([borrower.model_dump()])
 
-    # Transformer le dictionnaire en DataFrame
-    donnees_df = pd.DataFrame([donnees])
+    try:
+        prediction = int(model.predict(data)[0])
+        probabilities = model.predict_proba(data)[0]
+        # Cette API suppose que la classe positive (défaut) est la classe 1.
+        classes = list(model.classes_)
+        if 1 not in classes:
+            raise ValueError("La classe 1 (défaut) est absente du modèle.")
+        default_probability = float(probabilities[classes.index(1)])
 
-    # Prédiction de la classe
-    prediction = modele.predict(donnees_df)[0]
-
-    # Probabilité de défaut = probabilité de la classe 1
-    probabilite_defaut = modele.predict_proba(
-        donnees_df
-    )[0, 1]
-
-    # Retourner les résultats
-    return {
-        "prediction": int(prediction),
-        "probabilite_defaut": round(
-            float(probabilite_defaut),
-            4
-        )
-    }
+        return {
+            "prediction": prediction,
+            "probabilite_defaut": round(default_probability, 6),
+            "score_risque_pourcentage": round(default_probability * 100, 2),
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Erreur de prédiction : {exc}") from exc

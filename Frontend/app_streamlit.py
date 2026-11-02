@@ -1,4 +1,6 @@
 import os
+import base64
+from pathlib import Path
 from datetime import datetime
 
 import pandas as pd
@@ -20,6 +22,14 @@ st.set_page_config(
 API_URL = os.getenv("CREDIT_RISK_API_URL", "http://127.0.0.1:8000").rstrip("/")
 PREDICT_URL = f"{API_URL}/predict"
 HEALTH_URL = f"{API_URL}/health"
+
+# Chemin de la photo : racine du projet / graphiques / maphoto.jpg
+# Chemin exact vers ta photo
+PHOTO_PATH = Path(__file__).resolve().parent.parent / "graphiques" / "maphoto..jpg"
+
+# Lire la photo et la convertir en Base64 pour l afficher dans le HTML du dashboard.
+with open(PHOTO_PATH, "rb") as image_file:
+    photo_base64 = base64.b64encode(image_file.read()).decode("utf-8")
 
 if "prediction_history" not in st.session_state:
     st.session_state.prediction_history = []
@@ -71,7 +81,17 @@ html, body, [class*="css"] { font-family:'DM Sans',sans-serif; }
     border-radius:12px;padding:12px;margin-top:14px;font-size:.82rem;
 }
 .topline {display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
-.page-title {font-size:1.85rem;font-weight:800;color:var(--ink);letter-spacing:-.045em;line-height:1.15;}
+/* Style du titre principal du dashboard */
+.dashboard-main-title {
+    font-size:1.85rem;
+    font-weight:800;
+    color:var(--ink);
+    letter-spacing:-.045em;
+    line-height:1.2;
+    margin:0;
+    padding:0;
+    display:block;
+}
 .page-subtitle {color:var(--muted);font-size:.91rem;margin-top:5px;}
 .user-chip {
     display:inline-flex;align-items:center;gap:9px;background:white;
@@ -81,7 +101,7 @@ html, body, [class*="css"] { font-family:'DM Sans',sans-serif; }
 .user-avatar {
     width:34px;height:34px;border-radius:50%;display:flex;align-items:center;
     justify-content:center;background:linear-gradient(135deg,#DCEBFF,#B9D7FF);
-    color:#174A9B;font-weight:800;
+    color:#174A9B;font-weight:800;object-fit:cover;
 }
 .hero {
     border-radius:20px;padding:24px 28px;color:white;
@@ -218,7 +238,11 @@ def risk_gauge(prob):
 
 # ----------------------------- Sidebar -------------------
 with st.sidebar:
-    st.markdown('<div class="brand-mark">🛡️</div>', unsafe_allow_html=True)
+    # Afficher le titre principal du dashboard
+    st.markdown(
+    '<div class="dashboard-main-title">Credit Risk Dashboard</div>',
+    unsafe_allow_html=True
+)
     st.markdown('<div class="brand-name">CREDIT INTELLIGENCE</div>', unsafe_allow_html=True)
     st.markdown('<div class="brand-caption">RISK ANALYTICS PLATFORM</div>', unsafe_allow_html=True)
     st.write("")
@@ -255,10 +279,10 @@ with head1:
     st.markdown('<div class="page-title">Credit Risk Dashboard</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Analyse intelligente et suivi du risque de crédit</div>', unsafe_allow_html=True)
 with head2:
-    st.markdown("""
+    st.markdown(f"""
       <div style="display:flex;justify-content:flex-end;padding-top:7px">
         <div class="user-chip">
-          <div class="user-avatar">DS</div>
+          <img class="user-avatar" src="data:image/jpeg;base64,{photo_base64}" alt="Photo de profil">
           <div><div style="font-size:.78rem;font-weight:800">Data Scientist</div>
           <div style="font-size:.68rem;color:#71809A">Workspace</div></div>
         </div>

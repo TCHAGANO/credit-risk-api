@@ -14,7 +14,7 @@ import streamlit as st
 # =========================================================
 st.set_page_config(
     page_title="Credit Risk Intelligence",
-    page_icon="🛡️",
+    page_icon="🏦",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -236,6 +236,11 @@ def risk_gauge(prob):
     return fig
 
 
+# Fonction appelée avant le rerun de Streamlit pour changer de page.
+def navigate_to_page(page_label):
+    st.session_state["navigation"] = page_label
+
+
 # ----------------------------- Sidebar -------------------
 with st.sidebar:
     # Afficher le titre principal du dashboard
@@ -244,7 +249,7 @@ with st.sidebar:
     unsafe_allow_html=True
 )
     st.markdown('<div class="brand-name">CREDIT INTELLIGENCE</div>', unsafe_allow_html=True)
-    st.markdown('<div class="brand-caption">RISK ANALYTICS PLATFORM</div>', unsafe_allow_html=True)
+    st.markdown('<div class="brand-caption">PLATFORME DE RISQUE ANALYTIQUE</div>', unsafe_allow_html=True)
     st.write("")
     st.divider()
 
@@ -255,7 +260,13 @@ with st.sidebar:
         "◷  Historique": "history",
         "⚙  Paramètres": "settings",
     }
-    selected = st.radio("ESPACE DE TRAVAIL", list(pages.keys()), label_visibility="visible")
+    # La clé permet aux boutons d'accès rapide de changer la page sélectionnée.
+    selected = st.radio(
+        "ESPACE DE TRAVAIL",
+        list(pages.keys()),
+        label_visibility="visible",
+        key="navigation"
+    )
     page = pages[selected]
 
     st.divider()
@@ -284,7 +295,7 @@ with head2:
         <div class="user-chip">
           <img class="user-avatar" src="data:image/jpeg;base64,{photo_base64}" alt="Photo de profil">
           <div><div style="font-size:.78rem;font-weight:800">Data Scientist</div>
-          <div style="font-size:.68rem;color:#71809A">Workspace</div></div>
+          <div style="font-size:.68rem;color:#71809A">Bahissou TCHAGNAO</div></div>
         </div>
       </div>
     """, unsafe_allow_html=True)
@@ -371,11 +382,19 @@ if page == "overview":
     st.markdown('<div class="section-heading">Accès rapide</div>', unsafe_allow_html=True)
     qa, qb = st.columns(2)
     with qa:
-        if st.button("＋  Nouvelle évaluation", use_container_width=True):
-            st.info("Choisissez « Nouvelle prédiction » dans le menu latéral.")
+        st.button(
+            "＋  Nouvelle évaluation",
+            use_container_width=True,
+            on_click=navigate_to_page,
+            args=("◎  Nouvelle prédiction",)
+        )
     with qb:
-        if st.button("▤  Consulter l’historique", use_container_width=True):
-            st.info("Choisissez « Historique » dans le menu latéral.")
+        st.button(
+            "▤  Consulter l’historique",
+            use_container_width=True,
+            on_click=navigate_to_page,
+            args=("◷  Historique",)
+        )
 
 
 # =========================================================
@@ -400,7 +419,7 @@ elif page == "prediction":
             anciennete_emploi = st.number_input("Ancienneté professionnelle (années)", min_value=0.0, value=5.0, step=.5)
         with c2:
             motif_pret = st.selectbox("Motif du prêt", ["PERSONAL", "EDUCATION", "MEDICAL", "VENTURE", "HOMEIMPROVEMENT", "DEBTCONSOLIDATION"])
-            niveau_de_risque = st.selectbox("Grade / niveau du prêt", ["Low", "Medium", "High"])
+            niveau_de_risque = st.selectbox("Grade / niveau du prêt", ["A", "B", "C", "D", "E", "F", "G" ])
             montant_pret = st.number_input("Montant du prêt (€)", min_value=0.0, value=12000.0, step=500.0)
             taux_interet = st.number_input("Taux d’intérêt (%)", min_value=0.0, value=9.5, step=.1)
         with c3:
